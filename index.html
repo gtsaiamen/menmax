@@ -261,7 +261,12 @@ tr:hover td{background:rgba(255,255,255,0.02);}
   <div class="nav-item" onclick="goto('avatar')"><span class="icon">👤</span> Портрет аватара</div>
   <div class="nav-item" onclick="goto('negotiate')"><span class="icon">🤝</span> Переговоры</div>
   <div class="sidebar-bottom">
-    <div class="api-status"><div class="api-dot"></div> Claude AI подключён</div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:6px">Gemini API ключ</div>
+      <input class="input" id="gemini-key" type="password" placeholder="AIza..." style="font-size:12px;padding:7px 10px" oninput="saveKey(this.value)">
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">aistudio.google.com → Get API key</div>
+    </div>
+    <div class="api-status" id="api-status"><div class="api-dot" style="background:var(--muted)"></div> Ключ не введён</div>
   </div>
 </nav>
 
@@ -1054,23 +1059,57 @@ function notify(msg, type='ok') {
   setTimeout(()=>n.classList.remove('show'), 3000);
 }
 
+// ===================== API KEY =====================
+function saveKey(val) {
+  localStorage.setItem('gemini_key', val);
+  const status = document.getElementById('api-status');
+  if(val.length > 10) {
+    status.innerHTML = '<div class="api-dot"></div> Gemini подключён';
+    status.querySelector('.api-dot').style.background = 'var(--green)';
+  } else {
+    status.innerHTML = '<div class="api-dot" style="background:var(--muted)"></div> Ключ не введён';
+  }
+}
+
+function getKey() {
+  return document.getElementById('gemini-key').value || localStorage.getItem('gemini_key') || '';
+}
+
+// Restore key on load
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('gemini_key');
+  if(saved) {
+    document.getElementById('gemini-key').value = saved;
+    saveKey(saved);
+  }
+});
+
 // ===================== AI CALLS =====================
 async function callClaude(prompt, systemPrompt) {
+  const key = getKey();
+  if(!key) {
+    notify('Введи Gemini API ключ в боковой панели слева','warn');
+    return '⚠️ Нет API ключа. Введи ключ в поле слева внизу.\n\nПолучить бесплатно: aistudio.google.com → Get API key';
+  }
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system: systemPrompt,
-        messages:[{role:'user',content:prompt}]
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
       })
     });
     const data = await res.json();
-    return data.content?.[0]?.text || 'Ошибка получения ответа';
+    if(data.error) {
+      if(data.error.code === 400) return '❌ Неверный API ключ. Проверь ключ на aistudio.google.com';
+      if(data.error.code === 429) return '⏳ Превышен лимит запросов. Подожди минуту и попробуй снова.';
+      return `❌ Ошибка: ${data.error.message}`;
+    }
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Пустой ответ от AI';
   } catch(e) {
-    return 'Ошибка соединения с AI. Проверь подключение.';
+    return '❌ Ошибка соединения. Проверь интернет.';
   }
 }
 
@@ -1333,8 +1372,8 @@ async function generateReport() {
   document.getElementById('report-result').innerHTML = formatAIOutput(res);
 }
 
-// Init
-document.addEventListener('DOMContentLoaded', () => {
+// placeholder
+window.addEventListener('DOMContentLoaded', () => {
   const today = new Date().toISOString().split('T')[0];
   const dealDate = document.getElementById('deal-date');
   if(dealDate) dealDate.value = today;
