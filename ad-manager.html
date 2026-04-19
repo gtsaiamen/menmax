@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdFlow — Менеджер рекламы ТГ + MAX</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Onest:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08080e;
+  --bg2: #0f0f18;
+  --bg3: #171724;
+  --bg4: #1e1e2e;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.1);
+  --text: #eeedf8;
+  --muted: #6b6a80;
+  --muted2: #9998b0;
+  --tg: #29b6f6;
+  --tg-bg: rgba(41,182,246,0.1);
+  --tg-border: rgba(41,182,246,0.2);
+  --max: #ff6b35;
+  --max-bg: rgba(255,107,53,0.1);
+  --max-border: rgba(255,107,53,0.2);
+  --green: #00e676;
+  --green-bg: rgba(0,230,118,0.1);
+  --red: #ff4b6e;
+  --red-bg: rgba(255,75,110,0.1);
+  --yellow: #ffd740;
+  --yellow-bg: rgba(255,215,64,0.1);
+  --accent: #7c6dfa;
+  --accent2: #00d9ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Onest',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,109,250,0.08),transparent);pointer-events:none;z-index:0;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+
+/* LAYOUT */
+.app{display:flex;min-height:100vh;position:relative;z-index:1;}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.logo-text{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;letter-spacing:-1px;color:var(--text);}
+.logo-text span{color:var(--accent);}
+.logo-sub{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:0.5px;}
+.sidebar-section{padding:16px 12px 8px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;color:var(--muted2);font-size:13px;font-weight:500;margin:1px 8px;border:1px solid transparent;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--bg3);color:var(--text);border-color:var(--border2);}
+.nav-item .icon{font-size:15px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;}
+.sidebar-bottom{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
+.api-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted2);}
+.api-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;min-width:0;}
+.page{display:none;padding:28px 28px;min-height:calc(100vh - 60px);}
+.page.active{display:block;}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:24px;}
+.page-title{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.5px;}
+.page-sub{color:var(--muted2);font-size:13px;margin-top:4px;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color 0.2s;cursor:default;position:relative;overflow:hidden;}
+.stat-card:hover{border-color:var(--border2);}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:var(--glow,var(--accent));opacity:0.06;filter:blur(20px);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;}
+.stat-val{font-family:'Unbounded',sans-serif;font-size:24px;font-weight:700;line-height:1;}
+.stat-delta{font-size:12px;margin-top:6px;}
+.up{color:var(--green);}
+.down{color:var(--red);}
+.neutral{color:var(--muted2);}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted2);}
+.card-body{padding:20px;}
+
+/* GRID LAYOUTS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g-6-4{display:grid;grid-template-columns:6fr 4fr;gap:16px;}
+.g-7-3{display:grid;grid-template-columns:7fr 3fr;gap:16px;}
+
+/* FORM */
+.field{margin-bottom:14px;}
+.label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.input,.select,.textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-family:'Onest',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s;}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--accent);}
+.input::placeholder,.textarea::placeholder{color:var(--muted);}
+.textarea{resize:vertical;min-height:80px;}
+.select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6a80'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+
+/* PLATFORM TOGGLE */
+.platform-toggle{display:flex;gap:8px;margin-bottom:14px;}
+.ptoggle{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);color:var(--muted2);font-family:'Onest',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;text-align:center;letter-spacing:0.3px;}
+.ptoggle:hover{color:var(--text);}
+.ptoggle.tg.on{background:var(--tg-bg);color:var(--tg);border-color:var(--tg-border);}
+.ptoggle.max.on{background:var(--max-bg);color:var(--max);border-color:var(--max-border);}
+
+/* BUTTONS */
+.btn{padding:10px 18px;border-radius:9px;border:none;font-family:'Onest',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{opacity:0.85;transform:translateY(-1px);}
+.btn-ghost{background:var(--bg3);border:1px solid var(--border2);color:var(--text);}
+.btn-ghost:hover{background:var(--bg4);}
+.btn-ai{background:linear-gradient(135deg,rgba(124,109,250,0.2),rgba(0,217,255,0.2));border:1px solid rgba(124,109,250,0.3);color:var(--text);width:100%;}
+.btn-ai:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(124,109,250,0.2);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-danger{background:var(--red-bg);border:1px solid rgba(255,75,110,0.2);color:var(--red);}
+
+/* VERDICT */
+.verdict{border-radius:12px;padding:16px;margin-top:16px;}
+.verdict.ok{background:var(--green-bg);border:1px solid rgba(0,230,118,0.2);}
+.verdict.warn{background:var(--yellow-bg);border:1px solid rgba(255,215,64,0.2);}
+.verdict.bad{background:var(--red-bg);border:1px solid rgba(255,75,110,0.2);}
+.verdict-icon{font-size:28px;margin-bottom:8px;}
+.verdict-title{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;margin-bottom:6px;}
+.verdict-text{font-size:13px;color:var(--muted2);line-height:1.6;}
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
+.metric-box{background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;text-align:center;}
+.metric-val{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700;}
+.metric-label{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.4px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-tg{background:var(--tg-bg);color:var(--tg);border:1px solid var(--tg-border);}
+.badge-max{background:var(--max-bg);color:var(--max);border:1px solid var(--max-border);}
+.badge-green{background:var(--green-bg);color:var(--green);}
+.badge-red{background:var(--red-bg);color:var(--red);}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow);}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);font-weight:600;}
+td{padding:12px 14px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+.td-name{font-weight:500;}
+.td-muted{color:var(--muted2);font-size:12px;}
+
+/* CRM PIPELINE */
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;min-height:400px;}
+.pipeline-col{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;}
+.pipeline-header{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.pipeline-count{background:var(--bg4);border-radius:10px;padding:1px 7px;font-size:11px;color:var(--muted2);}
+.deal-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:12px;cursor:pointer;transition:all 0.2s;}
+.deal-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.deal-name{font-size:13px;font-weight:500;margin-bottom:4px;}
+.deal-sub{font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center;}
+.deal-amount{font-family:'Unbounded',sans-serif;font-size:12px;color:var(--green);margin-top:6px;}
+
+/* HUNT LEVELS */
+.hunt-levels{display:flex;flex-direction:column;gap:8px;}
+.hunt-level{border-radius:10px;padding:12px 14px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;}
+.hunt-level:hover{border-color:var(--border2);}
+.hunt-level.active-level{border-color:var(--accent);background:rgba(124,109,250,0.05);}
+.hunt-num{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;opacity:0.15;float:right;}
+.hunt-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.hunt-desc{font-size:12px;color:var(--muted2);line-height:1.5;}
+.hunt-content{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;}
+.hunt-level.active-level .hunt-content{display:block;}
+
+/* POST VARIANTS */
+.post-variant{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;}
+.post-variant:hover{border-color:var(--border2);}
+.post-variant-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.post-variant-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;}
+.post-variant-text{font-size:13px;line-height:1.65;color:var(--muted2);}
+.post-variant-text strong{color:var(--text);}
+
+/* REPORT CHARTS */
+.chart-bar-wrap{display:flex;flex-direction:column;gap:10px;}
+.chart-bar-item{display:flex;align-items:center;gap:10px;font-size:12px;}
+.chart-bar-label{width:80px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chart-bar-track{flex:1;background:var(--bg3);border-radius:4px;height:8px;overflow:hidden;}
+.chart-bar-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+.chart-bar-val{width:50px;text-align:right;font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;}
+
+/* LOADING */
+.loading{display:flex;align-items:center;gap:8px;color:var(--muted2);font-size:13px;padding:20px;}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* AI OUTPUT */
+.ai-output{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:14px;font-size:13px;line-height:1.7;color:var(--muted2);display:none;}
+.ai-output.show{display:block;}
+.ai-output strong{color:var(--text);}
+.ai-section{margin-bottom:12px;}
+.ai-section-title{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;width:fit-content;}
+.tab{padding:7px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;color:var(--muted);border:none;background:none;font-family:'Onest',sans-serif;}
+.tab.active{background:var(--bg4);color:var(--text);}
+.tab:hover:not(.active){color:var(--muted2);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* HUNT PROGRESS */
+.hunt-progress{display:flex;gap:0;margin-bottom:20px;}
+.hunt-step{flex:1;text-align:center;position:relative;}
+.hunt-step::after{content:'';position:absolute;top:14px;left:50%;right:-50%;height:2px;background:var(--border2);}
+.hunt-step:last-child::after{display:none;}
+.hunt-dot{width:28px;height:28px;border-radius:50%;background:var(--bg3);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin:0 auto 6px;position:relative;z-index:1;transition:all 0.3s;}
+.hunt-step.done .hunt-dot{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.hunt-step.current .hunt-dot{background:rgba(124,109,250,0.2);border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(124,109,250,0.3);}
+.hunt-step-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;}
+
+/* TAGS */
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--muted2);}
+
+/* NOTIFY */
+.notify{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;font-size:13px;z-index:1000;transform:translateY(80px);opacity:0;transition:all 0.3s;max-width:300px;}
+.notify.show{transform:translateY(0);opacity:1;}
+
+/* SCROLLABLE TABLE */
+.scroll-table{max-height:380px;overflow-y:auto;}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px;color:var(--muted);}
+.empty-icon{font-size:32px;margin-bottom:8px;opacity:0.4;}
+.empty-text{font-size:13px;}
+
+/* AVATAR FIELDS */
+.avatar-section{margin-bottom:20px;}
+.avatar-section-title{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.avatar-section-title::before{content:'';display:block;width:3px;height:14px;background:var(--accent);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">Ad<span>Flow</span></div>
+    <div class="logo-sub">ТГ + MAX менеджер</div>
+  </div>
+  <div class="sidebar-section">Главное</div>
+  <div class="nav-item active" onclick="goto('dashboard')"><span class="icon">⚡</span> Дашборд</div>
+  <div class="nav-item" onclick="goto('analyzer')"><span class="icon">🔍</span> Анализ канала</div>
+  <div class="nav-item" onclick="goto('posts')"><span class="icon">✍️</span> Рекламный пост</div>
+  <div class="nav-item" onclick="goto('crm')"><span class="icon">📋</span> CRM сделок <span class="nav-badge" id="crm-badge">3</span></div>
+  <div class="nav-item" onclick="goto('reports')"><span class="icon">📊</span> Отчёты</div>
+  <div class="sidebar-section">AI Инструменты</div>
+  <div class="nav-item" onclick="goto('hunt')"><span class="icon">🎯</span> Лестница Ханта</div>
+  <div class="nav-item" onclick="goto('avatar')"><span class="icon">👤</span> Портрет аватара</div>
+  <div class="nav-item" onclick="goto('negotiate')"><span class="icon">🤝</span> Переговоры</div>
+  <div class="sidebar-bottom">
+    <div class="api-status"><div class="api-dot"></div> Claude AI подключён</div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ========== DASHBOARD ========== -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div class="page-title">Дашборд</div>
+    <div class="page-sub">Обзор работы за текущий месяц</div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card" style="--glow:#29b6f6">
+      <div class="stat-label">Размещений</div>
+      <div class="stat-val">24</div>
+      <div class="stat-delta up">↑ 8 за неделю</div>
+    </div>
+    <div class="stat-card" style="--glow:#00e676">
+      <div class="stat-label">Потрачено</div>
+      <div class="stat-val">84 200 ₽</div>
+      <div class="stat-delta neutral">ТГ 61к + MAX 23к</div>
+    </div>
+    <div class="stat-card" style="--glow:#7c6dfa">
+      <div class="stat-label">Подписчиков</div>
+      <div class="stat-val">2 840</div>
+      <div class="stat-delta up">↑ CPF 29.6 ₽</div>
+    </div>
+    <div class="stat-card" style="--glow:#ffd740">
+      <div class="stat-label">Конверсия</div>
+      <div class="stat-val">3.4%</div>
+      <div class="stat-delta up">↑ 0.4% к прошлой</div>
+    </div>
+  </div>
+
+  <div class="g-6-4">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Последние размещения</span><button class="btn btn-ghost btn-sm" onclick="goto('crm')">Все сделки →</button></div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <tr><th>Канал</th><th>Платформа</th><th>Цена</th><th>CPF</th><th>Статус</th></tr>
+            <tr>
+              <td><div class="td-name">@marketing_pro</div><div class="td-muted">87к подписчиков</div></td>
+              <td><span class="badge badge-tg">TG</span></td>
+              <td>4 500 ₽</td>
+              <td><span class="up">28 ₽</span></td>
+              <td><span class="badge badge-green">✓ Готово</span></td>
+            </tr>
+            <tr>
+              <td><div class="td-name">Бизнес Инсайды</div><div class="td-muted">43к подписчиков</div></td>
+              <td><span class="badge badge-max">MAX</span></td>
+              <td>1 800 ₽</td>
+              <td><span class="up">22 ₽</span></td>
+              <td><span class="badge badge-green">✓ Готово</span></td>
+            </tr>
+            <tr>
+              <td><div class="td-name">@digital_news</div><div class="td-muted">120к подписчиков</div></td>
+              <td><span class="badge badge-tg">TG</span></td>
+              <td>6 000 ₽</td>
+              <td><span class="neutral">В процессе</span></td>
+              <td><span class="badge badge-yellow">⏳ Ждём</span></td>
+            </tr>
+            <tr>
+              <td><div class="td-name">Tech Россия</div><div class="td-muted">29к подписчиков</div></td>
+              <td><span class="badge badge-max">MAX</span></td>
+              <td>900 ₽</td>
+              <td><span class="up">18 ₽</span></td>
+              <td><span class="badge badge-green">✓ Готово</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">CPF по платформам</span></div>
+      <div class="card-body">
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--tg)">Telegram</span>
+            <span style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700">32 ₽</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;height:8px;overflow:hidden">
+            <div style="width:64%;height:100%;background:var(--tg);border-radius:6px"></div>
+          </div>
+        </div>
+        <div style="margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--max)">MAX</span>
+            <span style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700">21 ₽</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;height:8px;overflow:hidden">
+            <div style="width:42%;height:100%;background:var(--max);border-radius:6px"></div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">MAX выгоднее на</div>
+          <div style="font-family:'Unbounded',sans-serif;font-size:22px;font-weight:700;color:var(--green)">34%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Топ каналы по ERR</span></div>
+      <div class="card-body">
+        <div class="chart-bar-wrap">
+          <div class="chart-bar-item"><span class="chart-bar-label">@smm_guru</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:82%;background:var(--green)"></div></div><span class="chart-bar-val up">41%</span></div>
+          <div class="chart-bar-item"><span class="chart-bar-label">Tech MAX</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:70%;background:var(--green)"></div></div><span class="chart-bar-val up">35%</span></div>
+          <div class="chart-bar-item"><span class="chart-bar-label">@biz_daily</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:52%;background:var(--yellow)"></div></div><span class="chart-bar-val" style="color:var(--yellow)">26%</span></div>
+          <div class="chart-bar-item"><span class="chart-bar-label">@news_ru</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:36%;background:var(--yellow)"></div></div><span class="chart-bar-val" style="color:var(--yellow)">18%</span></div>
+          <div class="chart-bar-item"><span class="chart-bar-label">Bigchannel</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:14%;background:var(--red)"></div></div><span class="chart-bar-val down">7%</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Сделки по статусам</span></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px">Поиск каналов</span>
+            <span class="badge badge-yellow">4</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px">Переговоры</span>
+            <span class="badge" style="background:rgba(124,109,250,0.1);color:var(--accent);border:1px solid rgba(124,109,250,0.2)">3</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px">Размещение</span>
+            <span class="badge badge-tg">2</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px">Ожидаем пост</span>
+            <span class="badge badge-max">3</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px">Завершено</span>
+            <span class="badge badge-green">12</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Быстрые действия</span></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="goto('analyzer')">🔍 Проанализировать канал</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="goto('posts')">✍️ Написать рекламный пост</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="addDeal()">➕ Добавить сделку</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="goto('hunt')">🎯 Анализ аудитории</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="goto('reports')">📊 Открыть отчёты</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ANALYZER ========== -->
+<div class="page" id="page-analyzer">
+  <div class="page-header">
+    <div class="page-title">Анализ канала</div>
+    <div class="page-sub">AI оценка перед закупкой рекламы в ТГ и MAX</div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Данные канала</span></div>
+      <div class="card-body">
+        <div class="platform-toggle">
+          <button class="ptoggle tg on" id="pt-tg" onclick="setPlatform('tg')">📱 Telegram</button>
+          <button class="ptoggle max" id="pt-max" onclick="setPlatform('max')">💬 MAX</button>
+        </div>
+        <div class="field"><label class="label">Название / @username</label><input class="input" id="ch-name" placeholder="@channel или название канала"></div>
+        <div class="g2" style="gap:10px">
+          <div class="field"><label class="label">Подписчики</label><input class="input" id="ch-subs" type="number" placeholder="50000"></div>
+          <div class="field"><label class="label">Охват 1 поста</label><input class="input" id="ch-reach" type="number" placeholder="12000"></div>
+        </div>
+        <div class="g2" style="gap:10px">
+          <div class="field"><label class="label">Цена размещения ₽</label><input class="input" id="ch-price" type="number" placeholder="5000"></div>
+          <div class="field"><label class="label">ERR %</label><input class="input" id="ch-err" type="number" placeholder="18" step="0.1"></div>
+        </div>
+        <div class="field"><label class="label">Тематика канала</label><input class="input" id="ch-topic" placeholder="Маркетинг, бизнес, технологии..."></div>
+        <div class="field"><label class="label">Ваш продукт / ниша</label><input class="input" id="ch-product" placeholder="Курс по инвестициям, онлайн-сервис..."></div>
+        <div class="field" id="rkn-field" style="display:none">
+          <label class="label">Регистрация в РКН (для MAX, 10к+)</label>
+          <select class="select" id="ch-rkn">
+            <option value="yes">✅ Зарегистрирован</option>
+            <option value="no">❌ Не зарегистрирован</option>
+            <option value="unknown">❓ Не проверял</option>
+          </select>
+        </div>
+        <button class="btn btn-ai" onclick="analyzeChannel()">⚡ AI Анализ канала</button>
+        <div id="analyze-loading" style="display:none" class="loading"><div class="spinner"></div> Анализирую данные...</div>
+        <div id="analyze-result" class="ai-output"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Ориентиры ERR</span></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--green-bg);border-radius:8px;border:1px solid rgba(0,230,118,0.15)">
+              <span style="font-family:'Unbounded',sans-serif;font-size:13px;color:var(--green)">20%+</span>
+              <span style="font-size:12px">Отлично — живая аудитория</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--yellow-bg);border-radius:8px;border:1px solid rgba(255,215,64,0.15)">
+              <span style="font-family:'Unbounded',sans-serif;font-size:13px;color:var(--yellow)">10–20%</span>
+              <span style="font-size:12px">Норма — брать осторожно</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--red-bg);border-radius:8px;border:1px solid rgba(255,75,110,0.15)">
+              <span style="font-family:'Unbounded',sans-serif;font-size:13px;color:var(--red)">до 10%</span>
+              <span style="font-size:12px">Плохо — скорее всего накрутка</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Норма охвата</span></div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--muted2);line-height:1.7">
+            <div>• <strong style="color:var(--text)">ТГ:</strong> 20–50% от подписчиков</div>
+            <div>• <strong style="color:var(--text)">MAX:</strong> 25–60% (платформа свежая)</div>
+            <div>• Ниже 15% — мёртвая аудитория</div>
+            <div style="margin-top:10px;padding:8px;background:var(--bg3);border-radius:8px;font-size:12px">💡 Для MAX учитывай: рост после сент. 2025 — норма, не накрутка</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Калькулятор CPF</span></div>
+        <div class="card-body">
+          <div class="g2" style="gap:10px">
+            <div class="field"><label class="label">Цена ₽</label><input class="input" id="cpf-price" type="number" placeholder="5000" oninput="calcCPF()"></div>
+            <div class="field"><label class="label">Охват</label><input class="input" id="cpf-reach" type="number" placeholder="10000" oninput="calcCPF()"></div>
+          </div>
+          <div class="field">
+            <label class="label">Конверсия %</label>
+            <select class="select" id="cpf-conv" onchange="calcCPF()">
+              <option value="5">Горячая тема (5%)</option>
+              <option value="3" selected>Средняя (3%)</option>
+              <option value="1.5">Холодная (1.5%)</option>
+              <option value="0.8">Очень холодная (0.8%)</option>
+            </select>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">CPF</div>
+            <div id="cpf-result" style="font-family:'Unbounded',sans-serif;font-size:28px;font-weight:700;color:var(--accent)">—</div>
+            <div id="cpf-subs" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== POSTS ========== -->
+<div class="page" id="page-posts">
+  <div class="page-header">
+    <div class="page-title">Рекламный пост</div>
+    <div class="page-sub">Генератор постов по методологии Фрэнка Керна</div>
+  </div>
+  <div class="g-6-4">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Параметры поста</span></div>
+      <div class="card-body">
+        <div class="platform-toggle">
+          <button class="ptoggle tg on" id="pp-tg" onclick="setPostPlatform('tg')">📱 Telegram</button>
+          <button class="ptoggle max" id="pp-max" onclick="setPostPlatform('max')">💬 MAX</button>
+        </div>
+        <div class="g2" style="gap:10px">
+          <div class="field"><label class="label">Продукт / услуга</label><input class="input" id="post-product" placeholder="Курс по таргету, SaaS, товар..."></div>
+          <div class="field"><label class="label">Ниша канала</label><input class="input" id="post-niche" placeholder="Маркетинг, бизнес, мамы..."></div>
+        </div>
+        <div class="field"><label class="label">Главная боль аудитории</label><input class="input" id="post-pain" placeholder="Не знают как привлечь клиентов..."></div>
+        <div class="field"><label class="label">Главный результат / оффер</label><input class="input" id="post-result" placeholder="За 30 дней первые 10 клиентов..."></div>
+        <div class="field"><label class="label">Тон поста</label>
+          <select class="select" id="post-tone">
+            <option value="frank_kern">Фрэнк Керн — разговорный, личный</option>
+            <option value="story">Через историю клиента</option>
+            <option value="expert">Экспертный, фактурный</option>
+            <option value="provocative">Провокационный, вызывающий</option>
+          </select>
+        </div>
+        <div class="field"><label class="label">Уровень осознанности (лестница Ханта)</label>
+          <select class="select" id="post-hunt">
+            <option value="0">0 — не знает о проблеме</option>
+            <option value="1">1 — чувствует боль</option>
+            <option value="2">2 — ищет решения</option>
+            <option value="3" selected>3 — выбирает метод</option>
+            <option value="4">4 — сравнивает продукты</option>
+            <option value="5">5 — готов купить</option>
+          </select>
+        </div>
+        <div class="field"><label class="label">CTA (призыв)</label>
+          <select class="select" id="post-cta">
+            <option value="link">Ссылка на канал/сайт</option>
+            <option value="subscribe">Подписка на канал</option>
+            <option value="bot">Переход в бот</option>
+            <option value="comment">Комментарий/реакция</option>
+          </select>
+        </div>
+        <button class="btn btn-ai" onclick="generatePost()">✍️ Сгенерировать 3 варианта</button>
+        <div id="post-loading" style="display:none" class="loading"><div class="spinner"></div> Пишу варианты постов...</div>
+        <div id="post-result" class="ai-output"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Формула Керна</span></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+            <div style="padding:8px;background:var(--bg3);border-radius:8px;border-left:2px solid var(--accent)">
+              <strong>1. Точка зрения</strong>
+              <div style="color:var(--muted2);margin-top:3px;font-size:12px">Конкретное утверждение по теме поста</div>
+            </div>
+            <div style="padding:8px;background:var(--bg3);border-radius:8px;border-left:2px solid var(--tg)">
+              <strong>2. История с эмоцией</strong>
+              <div style="color:var(--muted2);margin-top:3px;font-size:12px">Личная или кейс клиента — реальная</div>
+            </div>
+            <div style="padding:8px;background:var(--bg3);border-radius:8px;border-left:2px solid var(--max)">
+              <strong>3. Метафора</strong>
+              <div style="color:var(--muted2);margin-top:3px;font-size:12px">Понятный всем образ для закрепления</div>
+            </div>
+            <div style="padding:8px;background:var(--bg3);border-radius:8px;border-left:2px solid var(--green)">
+              <strong>4. Мягкий CTA</strong>
+              <div style="color:var(--muted2);margin-top:3px;font-size:12px">Без давления, от истинного "я"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Особенности MAX</span></div>
+        <div class="card-body" style="font-size:13px;color:var(--muted2);line-height:1.7">
+          <div>• Только нативные посты, без кабинета</div>
+          <div>• Форматирование как в ТГ — жирный, курсив, ссылки</div>
+          <div>• Обязательна маркировка <strong style="color:var(--text)">«Реклама»</strong> + erid токен</div>
+          <div>• Меньше конкурентов → выше CTR</div>
+          <div style="margin-top:10px;padding:8px;background:var(--yellow-bg);border-radius:8px;border:1px solid rgba(255,215,64,0.15);font-size:12px">
+            ⚠️ Маркировка обязательна по закону с 2023 года. Получить erid через ОРД (Ozon ОРД, МТС Маркировка и др.)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CRM ========== -->
+<div class="page" id="page-crm">
+  <div class="page-header">
+    <div class="page-title">CRM сделок</div>
+    <div class="page-sub">Воронка работы с каналами и рекламодателями</div>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="showAddDeal()">➕ Новая сделка</button>
+    <button class="btn btn-ghost" onclick="exportCRM()">📥 Экспорт CSV</button>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <span class="badge badge-yellow">В работе: 9</span>
+      <span class="badge badge-green">Завершено: 12</span>
+    </div>
+  </div>
+
+  <!-- Add Deal Form -->
+  <div id="add-deal-form" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">Новая сделка</span><button class="btn btn-ghost btn-sm" onclick="hideAddDeal()">✕</button></div>
+    <div class="card-body">
+      <div class="g3" style="gap:10px">
+        <div class="field"><label class="label">Канал</label><input class="input" id="deal-channel" placeholder="@channel или название"></div>
+        <div class="field"><label class="label">Платформа</label>
+          <select class="select" id="deal-platform">
+            <option value="tg">Telegram</option>
+            <option value="max">MAX</option>
+          </select>
+        </div>
+        <div class="field"><label class="label">Цена ₽</label><input class="input" id="deal-price" type="number" placeholder="5000"></div>
+      </div>
+      <div class="g3" style="gap:10px">
+        <div class="field"><label class="label">Дата размещения</label><input class="input" id="deal-date" type="date"></div>
+        <div class="field"><label class="label">Статус</label>
+          <select class="select" id="deal-status">
+            <option value="search">Поиск</option>
+            <option value="nego">Переговоры</option>
+            <option value="agreed">Согласовано</option>
+            <option value="waiting">Ждём пост</option>
+            <option value="done">Готово</option>
+          </select>
+        </div>
+        <div class="field"><label class="label">Подписчиков получено</label><input class="input" id="deal-subs" type="number" placeholder="150"></div>
+      </div>
+      <div class="field"><label class="label">Заметки</label><textarea class="textarea" id="deal-notes" placeholder="Контакт админа, договорённости..." style="min-height:60px"></textarea></div>
+      <button class="btn btn-primary" onclick="saveDeal()">Сохранить сделку</button>
+    </div>
+  </div>
+
+  <div class="pipeline" id="crm-pipeline">
+    <div class="pipeline-col">
+      <div class="pipeline-header">Поиск <span class="pipeline-count">4</span></div>
+      <div class="deal-card"><div class="deal-name">@fitness_pro</div><div class="deal-sub"><span class="badge badge-tg" style="font-size:10px">TG</span> 45к подп.</div></div>
+      <div class="deal-card"><div class="deal-name">Мамский MAX</div><div class="deal-sub"><span class="badge badge-max" style="font-size:10px">MAX</span> 12к подп.</div></div>
+      <div class="deal-card"><div class="deal-name">@career_help</div><div class="deal-sub"><span class="badge badge-tg" style="font-size:10px">TG</span> 88к подп.</div></div>
+    </div>
+    <div class="pipeline-col">
+      <div class="pipeline-header">Переговоры <span class="pipeline-count">3</span></div>
+      <div class="deal-card"><div class="deal-name">@marketing_guru</div><div class="deal-sub"><span class="badge badge-tg" style="font-size:10px">TG</span> 5 000 ₽</div><div class="deal-amount">Ожид. CPF: ~30₽</div></div>
+      <div class="deal-card"><div class="deal-name">Бизнес идеи MAX</div><div class="deal-sub"><span class="badge badge-max" style="font-size:10px">MAX</span> 1 500 ₽</div></div>
+    </div>
+    <div class="pipeline-col">
+      <div class="pipeline-header">Согласовано <span class="pipeline-count">2</span></div>
+      <div class="deal-card"><div class="deal-name">@digital_life</div><div class="deal-sub"><span class="badge badge-tg" style="font-size:10px">TG</span> 7 200 ₽</div><div class="deal-amount">15 апреля</div></div>
+    </div>
+    <div class="pipeline-col">
+      <div class="pipeline-header">Ждём пост <span class="pipeline-count">3</span></div>
+      <div class="deal-card"><div class="deal-name">@news_daily</div><div class="deal-sub"><span class="badge badge-tg" style="font-size:10px">TG</span> 6 000 ₽</div><div class="deal-amount">Сегодня</div></div>
+      <div class="deal-card"><div class="deal-name">Tech MAX канал</div><div class="deal-sub"><span class="badge badge-max" style="font-size:10px">MAX</span> 900 ₽</div></div>
+    </div>
+    <div class="pipeline-col">
+      <div class="pipeline-header">Готово <span class="pipeline-count">12</span></div>
+      <div class="deal-card"><div class="deal-name">@smm_secrets</div><div class="deal-sub"><span class="badge badge-tg" style="font-size:10px">TG</span> 4 500 ₽</div><div class="deal-amount">CPF: 28₽ ✓</div></div>
+      <div class="deal-card"><div class="deal-name">Инфобиз MAX</div><div class="deal-sub"><span class="badge badge-max" style="font-size:10px">MAX</span> 1 200 ₽</div><div class="deal-amount">CPF: 19₽ ✓</div></div>
+      <div class="deal-card"><div class="deal-name">@business_club</div><div class="deal-sub"><span class="badge badge-tg" style="font-size:10px">TG</span> 3 800 ₽</div><div class="deal-amount">CPF: 35₽ ✓</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== REPORTS ========== -->
+<div class="page" id="page-reports">
+  <div class="page-header">
+    <div class="page-title">Отчёты</div>
+    <div class="page-sub">Аналитика эффективности рекламных кампаний</div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card" style="--glow:#00e676">
+      <div class="stat-label">Всего потрачено</div>
+      <div class="stat-val">84 200 ₽</div>
+      <div class="stat-delta neutral">апрель 2025</div>
+    </div>
+    <div class="stat-card" style="--glow:#7c6dfa">
+      <div class="stat-label">Подписчиков</div>
+      <div class="stat-val">2 840</div>
+      <div class="stat-delta up">↑ +18% к марту</div>
+    </div>
+    <div class="stat-card" style="--glow:#29b6f6">
+      <div class="stat-label">Средний CPF</div>
+      <div class="stat-val">29.6 ₽</div>
+      <div class="stat-delta up">↓ лучше на 12%</div>
+    </div>
+    <div class="stat-card" style="--glow:#ff6b35">
+      <div class="stat-label">Каналов проверено</div>
+      <div class="stat-val">47</div>
+      <div class="stat-delta neutral">24 одобрено</div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Эффективность по каналам</span>
+        <button class="btn btn-ghost btn-sm" onclick="generateReport()">AI Вывод ⚡</button>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap scroll-table">
+          <table>
+            <tr><th>Канал</th><th>Платф.</th><th>Цена</th><th>Подп.</th><th>CPF</th><th>ERR</th><th>Оценка</th></tr>
+            <tr><td class="td-name">@smm_secrets</td><td><span class="badge badge-tg">TG</span></td><td>4 500₽</td><td>160</td><td><span class="up">28₽</span></td><td><span class="up">24%</span></td><td><span class="badge badge-green">★★★</span></td></tr>
+            <tr><td class="td-name">Инфобиз MAX</td><td><span class="badge badge-max">MAX</span></td><td>1 200₽</td><td>63</td><td><span class="up">19₽</span></td><td><span class="up">31%</span></td><td><span class="badge badge-green">★★★</span></td></tr>
+            <tr><td class="td-name">@business_club</td><td><span class="badge badge-tg">TG</span></td><td>3 800₽</td><td>109</td><td class="neutral">35₽</td><td class="neutral">16%</td><td><span class="badge badge-yellow">★★☆</span></td></tr>
+            <tr><td class="td-name">Tech MAX</td><td><span class="badge badge-max">MAX</span></td><td>900₽</td><td>50</td><td><span class="up">18₽</span></td><td><span class="up">35%</span></td><td><span class="badge badge-green">★★★</span></td></tr>
+            <tr><td class="td-name">@bigblog_news</td><td><span class="badge badge-tg">TG</span></td><td>12 000₽</td><td>95</td><td><span class="down">126₽</span></td><td><span class="down">6%</span></td><td><span class="badge badge-red">★☆☆</span></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">ТГ vs MAX сравнение</span></div>
+        <div class="card-body">
+          <div class="chart-bar-wrap">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px">Средний CPF ₽ (меньше = лучше)</div>
+            <div class="chart-bar-item"><span class="chart-bar-label" style="color:var(--tg)">Telegram</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:64%;background:var(--tg)"></div></div><span class="chart-bar-val" style="color:var(--tg)">32₽</span></div>
+            <div class="chart-bar-item"><span class="chart-bar-label" style="color:var(--max)">MAX</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:42%;background:var(--max)"></div></div><span class="chart-bar-val" style="color:var(--max)">21₽</span></div>
+          </div>
+          <div class="chart-bar-wrap" style="margin-top:16px">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px">Средний ERR % (больше = лучше)</div>
+            <div class="chart-bar-item"><span class="chart-bar-label" style="color:var(--tg)">Telegram</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:46%;background:var(--tg)"></div></div><span class="chart-bar-val" style="color:var(--tg)">23%</span></div>
+            <div class="chart-bar-item"><span class="chart-bar-label" style="color:var(--max)">MAX</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:66%;background:var(--max)"></div></div><span class="chart-bar-val" style="color:var(--max)">33%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">AI Вывод по отчёту</span></div>
+        <div class="card-body">
+          <div id="report-loading" style="display:none" class="loading"><div class="spinner"></div> Генерирую выводы...</div>
+          <div id="report-result" style="font-size:13px;line-height:1.7;color:var(--muted2)">
+            <div style="padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+              Нажми <strong style="color:var(--text)">«AI Вывод»</strong> чтобы получить рекомендации по итогам кампании — какие каналы масштабировать, от каких отказаться, и где найти похожие.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== HUNT ========== -->
+<div class="page" id="page-hunt">
+  <div class="page-header">
+    <div class="page-title">Лестница Ханта</div>
+    <div class="page-sub">Определи уровень аудитории и выбери правильный контент</div>
+  </div>
+  <div class="g-6-4">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Параметры анализа</span></div>
+        <div class="card-body">
+          <div class="g2" style="gap:10px">
+            <div class="field"><label class="label">Продукт</label><input class="input" id="hunt-product" placeholder="Курс по рекламе в ТГ..."></div>
+            <div class="field"><label class="label">Аудитория канала</label><input class="input" id="hunt-audience" placeholder="Начинающие маркетологи..."></div>
+          </div>
+          <div class="field"><label class="label">Тип персонажа</label>
+            <select class="select" id="hunt-persona">
+              <option value="success">Самодовольный успешный (высокий доход, не видит проблем)</option>
+              <option value="burnout">Выгорающий продюсер (много работы, мало результата)</option>
+              <option value="skeptic">Скептичный эксперт (опытный, с предубеждениями)</option>
+              <option value="newbie" selected>Амбициозный новичок (энтузиазм без опыта)</option>
+              <option value="pragmatic">Прагматичный владелец (растущие расходы)</option>
+            </select>
+          </div>
+          <button class="btn btn-ai" onclick="analyzeHunt()">🎯 Построить цепочку</button>
+          <div id="hunt-loading" style="display:none" class="loading"><div class="spinner"></div> Строю логическую цепочку...</div>
+          <div id="hunt-result" class="ai-output"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">6 уровней лестницы</span></div>
+        <div class="card-body">
+          <div class="hunt-levels">
+            <div class="hunt-level" onclick="toggleHunt(this)">
+              <div class="hunt-num">0</div>
+              <div class="hunt-title">Нет проблемы</div>
+              <div class="hunt-desc">«У меня всё отлично» — не осознаёт потребности</div>
+              <div class="hunt-content"><div style="font-size:12px;color:var(--muted2)">Контент: сравнение с конкурентами, FOMO, «18-летние обгоняют экспертов»</div><div class="tags"><span class="tag">Кейсы роста</span><span class="tag">Статистика рынка</span><span class="tag">FOMO</span></div></div>
+            </div>
+            <div class="hunt-level" onclick="toggleHunt(this)">
+              <div class="hunt-num">1</div>
+              <div class="hunt-title">Есть боль, нет осознания</div>
+              <div class="hunt-desc">Чувствует что что-то не так, но причина неясна</div>
+              <div class="hunt-content"><div style="font-size:12px;color:var(--muted2)">Контент: диагностика, тесты «7 признаков неэффективности», калькуляторы потерь</div><div class="tags"><span class="tag">Диагностика</span><span class="tag">Разрыв ожиданий</span></div></div>
+            </div>
+            <div class="hunt-level" onclick="toggleHunt(this)">
+              <div class="hunt-num">2</div>
+              <div class="hunt-title">Ищет решения</div>
+              <div class="hunt-desc">Понял проблему, перебирает варианты</div>
+              <div class="hunt-content"><div style="font-size:12px;color:var(--muted2)">Контент: обзор методов с ROI, развенчание мифов, «найм vs технологии»</div><div class="tags"><span class="tag">Сравнение решений</span><span class="tag">ROI</span></div></div>
+            </div>
+            <div class="hunt-level" onclick="toggleHunt(this)">
+              <div class="hunt-num">3</div>
+              <div class="hunt-title">Выбирает метод</div>
+              <div class="hunt-desc">Определился с направлением, нужна конкретика</div>
+              <div class="hunt-content"><div style="font-size:12px;color:var(--muted2)">Контент: специфика инфобизнеса, системный vs точечный подход, уникальность экспертности</div><div class="tags"><span class="tag">Специфика ниши</span><span class="tag">Система</span></div></div>
+            </div>
+            <div class="hunt-level" onclick="toggleHunt(this)">
+              <div class="hunt-num">4</div>
+              <div class="hunt-title">Сравнивает продукты</div>
+              <div class="hunt-desc">Выбирает между конкурентами</div>
+              <div class="hunt-content"><div style="font-size:12px;color:var(--muted2)">Контент: отзывы, кейсы с цифрами, уникальные преимущества, социальные доказательства</div><div class="tags"><span class="tag">Отзывы</span><span class="tag">Кейсы</span><span class="tag">Отличия</span></div></div>
+            </div>
+            <div class="hunt-level" onclick="toggleHunt(this)">
+              <div class="hunt-num">5</div>
+              <div class="hunt-title">Готов купить</div>
+              <div class="hunt-desc">Последние сомнения, нужен толчок</div>
+              <div class="hunt-content"><div style="font-size:12px;color:var(--muted2)">Контент: детали программы, гарантии, ограниченность, расчёт окупаемости</div><div class="tags"><span class="tag">Дедлайн</span><span class="tag">Гарантия</span><span class="tag">ROI расчёт</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== AVATAR ========== -->
+<div class="page" id="page-avatar">
+  <div class="page-header">
+    <div class="page-title">Портрет аватара</div>
+    <div class="page-sub">Core Influence by Frank Kern — истинные стремления клиента</div>
+  </div>
+  <div class="g-7-3">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Параметры аватара</span></div>
+      <div class="card-body">
+        <div class="g3" style="gap:10px">
+          <div class="field"><label class="label">Продукт / ниша</label><input class="input" id="av-product" placeholder="Курс по инвестициям..."></div>
+          <div class="field"><label class="label">Возраст</label><input class="input" id="av-age" placeholder="35–45 лет"></div>
+          <div class="field"><label class="label">Профессия</label><input class="input" id="av-job" placeholder="Менеджер среднего звена..."></div>
+        </div>
+        <div class="g2" style="gap:10px">
+          <div class="field"><label class="label">Главная боль (поверхностная)</label><input class="input" id="av-pain" placeholder="Хочет больше зарабатывать..."></div>
+          <div class="field"><label class="label">Истинное стремление</label><input class="input" id="av-desire" placeholder="Свобода, признание, контроль..."></div>
+        </div>
+        <button class="btn btn-ai" onclick="buildAvatar()">👤 Построить портрет аватара</button>
+        <div id="avatar-loading" style="display:none" class="loading"><div class="spinner"></div> Создаю детальный портрет...</div>
+        <div id="avatar-result" class="ai-output"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Формула Керна</span></div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--muted2);line-height:1.8">
+            <div style="padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:10px">
+              <strong style="color:var(--text)">О + Л = Ж</strong><br>
+              <span style="font-size:12px">Опыт + Личность = Жизнь</span>
+            </div>
+            <div>• Люди хотят не вещи — а <strong style="color:var(--text)">ощущения</strong></div>
+            <div>• Ferrari — это не машина, это <strong style="color:var(--text)">чувство Джеймса Бонда</strong></div>
+            <div>• Истинная личность ≠ внешняя</div>
+            <div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:8px;font-size:12px">
+              <strong style="color:var(--accent)">Ключевой вопрос:</strong><br>
+              «Если бы не было ограничений — каким был бы твой идеальный день?»
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== NEGOTIATE ========== -->
+<div class="page" id="page-negotiate">
+  <div class="page-header">
+    <div class="page-title">Переговоры с админами</div>
+    <div class="page-sub">Скрипты, шаблоны и AI помощь для работы с владельцами каналов</div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Генератор сообщения</span></div>
+      <div class="card-body">
+        <div class="field"><label class="label">Цель сообщения</label>
+          <select class="select" id="neg-goal">
+            <option value="first">Первое обращение (холодный контакт)</option>
+            <option value="price">Торг по цене (снизить стоимость)</option>
+            <option value="followup">Follow-up (не ответили)</option>
+            <option value="conditions">Уточнить условия размещения</option>
+            <option value="reject">Вежливый отказ</option>
+          </select>
+        </div>
+        <div class="g2" style="gap:10px">
+          <div class="field"><label class="label">Канал</label><input class="input" id="neg-channel" placeholder="@channel"></div>
+          <div class="field"><label class="label">Бюджет ₽</label><input class="input" id="neg-budget" type="number" placeholder="3000"></div>
+        </div>
+        <div class="field"><label class="label">Ваш продукт</label><input class="input" id="neg-product" placeholder="Курс по таргету..."></div>
+        <button class="btn btn-ai" onclick="generateNeg()">💬 Написать сообщение</button>
+        <div id="neg-loading" style="display:none" class="loading"><div class="spinner"></div> Генерирую сообщение...</div>
+        <div id="neg-result" class="ai-output"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">Готовые шаблоны</span></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="post-variant" onclick="copyTemplate('first')">
+              <div class="post-variant-header"><span class="post-variant-label">Первый контакт</span><span style="font-size:11px;color:var(--muted)">нажми чтобы скопировать</span></div>
+              <div class="post-variant-text">Привет! Веду рекламные кампании в [ниша]. Хочу разместить нативный пост у вас. Есть свободные даты?</div>
+            </div>
+            <div class="post-variant" onclick="copyTemplate('price')">
+              <div class="post-variant-header"><span class="post-variant-label">Торг по цене</span></div>
+              <div class="post-variant-text">Цена выходит немного за бюджет. Могли бы рассмотреть [сумма]? Готовы к долгосрочному сотрудничеству.</div>
+            </div>
+            <div class="post-variant" onclick="copyTemplate('followup')">
+              <div class="post-variant-header"><span class="post-variant-label">Follow-up</span></div>
+              <div class="post-variant-text">Добрый день, хотел уточнить — рассматриваете ещё предложение о размещении? Напишите, если удобно.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Чеклист переговоров</span></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+            <label style="display:flex;gap:8px;cursor:pointer;align-items:flex-start"><input type="checkbox" style="margin-top:2px"> <span>Проверить канал через TGStat / mxstat.ru</span></label>
+            <label style="display:flex;gap:8px;cursor:pointer;align-items:flex-start"><input type="checkbox" style="margin-top:2px"> <span>Узнать охват последних 10 постов</span></label>
+            <label style="display:flex;gap:8px;cursor:pointer;align-items:flex-start"><input type="checkbox" style="margin-top:2px"> <span>Для MAX 10к+ проверить РКН</span></label>
+            <label style="display:flex;gap:8px;cursor:pointer;align-items:flex-start"><input type="checkbox" style="margin-top:2px"> <span>Согласовать дату и время публикации</span></label>
+            <label style="display:flex;gap:8px;cursor:pointer;align-items:flex-start"><input type="checkbox" style="margin-top:2px"> <span>Получить erid токен (маркировка)</span></label>
+            <label style="display:flex;gap:8px;cursor:pointer;align-items:flex-start"><input type="checkbox" style="margin-top:2px"> <span>Согласовать текст поста заранее</span></label>
+            <label style="display:flex;gap:8px;cursor:pointer;align-items:flex-start"><input type="checkbox" style="margin-top:2px"> <span>Зафиксировать в CRM</span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- NOTIFICATION -->
+<div class="notify" id="notify"></div>
+
+<script>
+// ===================== NAV =====================
+function goto(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  event && event.currentTarget && event.currentTarget.classList && event.currentTarget.classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  items.forEach(item => { if(item.getAttribute('onclick') && item.getAttribute('onclick').includes("'"+page+"'")) item.classList.add('active'); });
+}
+
+// ===================== PLATFORM TOGGLE =====================
+let currentPlatform = 'tg';
+function setPlatform(p) {
+  currentPlatform = p;
+  document.getElementById('pt-tg').classList.toggle('on', p==='tg');
+  document.getElementById('pt-max').classList.toggle('on', p==='max');
+  document.getElementById('rkn-field').style.display = p==='max' ? 'block' : 'none';
+}
+let postPlatform = 'tg';
+function setPostPlatform(p) {
+  postPlatform = p;
+  document.getElementById('pp-tg').classList.toggle('on', p==='tg');
+  document.getElementById('pp-max').classList.toggle('on', p==='max');
+}
+
+// ===================== CPF CALC =====================
+function calcCPF() {
+  const price = parseFloat(document.getElementById('cpf-price').value)||0;
+  const reach = parseFloat(document.getElementById('cpf-reach').value)||0;
+  const conv = parseFloat(document.getElementById('cpf-conv').value)||3;
+  if(!price||!reach){document.getElementById('cpf-result').textContent='—';document.getElementById('cpf-subs').textContent='';return;}
+  const subs = Math.round(reach * conv/100);
+  const cpf = subs>0 ? Math.round(price/subs) : 0;
+  const el = document.getElementById('cpf-result');
+  el.textContent = cpf + ' ₽';
+  el.style.color = cpf<50?'var(--green)':cpf<100?'var(--yellow)':'var(--red)';
+  document.getElementById('cpf-subs').textContent = 'Ожидаемых подписчиков: ~' + subs;
+}
+
+// ===================== HUNT TOGGLE =====================
+function toggleHunt(el) {
+  el.classList.toggle('active-level');
+}
+
+// ===================== CRM =====================
+function showAddDeal() { document.getElementById('add-deal-form').style.display='block'; }
+function hideAddDeal() { document.getElementById('add-deal-form').style.display='none'; }
+function addDeal() { goto('crm'); setTimeout(showAddDeal, 100); }
+
+let deals = [];
+function saveDeal() {
+  const ch = document.getElementById('deal-channel').value;
+  if(!ch){notify('Укажи название канала','warn');return;}
+  deals.push({
+    channel: ch,
+    platform: document.getElementById('deal-platform').value,
+    price: document.getElementById('deal-price').value,
+    date: document.getElementById('deal-date').value,
+    status: document.getElementById('deal-status').value,
+    subs: document.getElementById('deal-subs').value,
+    notes: document.getElementById('deal-notes').value
+  });
+  hideAddDeal();
+  notify('Сделка добавлена в CRM ✓','ok');
+  document.getElementById('deal-channel').value='';
+  document.getElementById('deal-price').value='';
+  document.getElementById('deal-notes').value='';
+}
+
+function exportCRM() {
+  notify('CSV экспорт — добавь свои данные и экспортируй','ok');
+}
+
+// ===================== COPY =====================
+function copyTemplate(type) {
+  const templates = {
+    first: 'Привет! Занимаюсь рекламными размещениями в нише [ниша]. Хотел бы разместить нативный пост в вашем канале. Подскажите, есть ли свободные места и какая стоимость?',
+    price: 'Спасибо за ответ! Бюджет немного ограничен — мог бы рассмотреть [сумма] за размещение? Тема хорошо подходит вашей аудитории, планируем долгосрочное сотрудничество.',
+    followup: 'Добрый день, писал ранее по поводу рекламного размещения. Не хочу быть навязчивым — просто хотел уточнить, актуально ли это для вас. Если нет — понимаю, не буду беспокоить.'
+  };
+  navigator.clipboard && navigator.clipboard.writeText(templates[type]).then(()=>notify('Шаблон скопирован ✓','ok'));
+}
+
+// ===================== NOTIFY =====================
+function notify(msg, type='ok') {
+  const n = document.getElementById('notify');
+  n.textContent = msg;
+  n.style.borderColor = type==='ok'?'rgba(0,230,118,0.3)':type==='warn'?'rgba(255,215,64,0.3)':'rgba(255,75,110,0.3)';
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'), 3000);
+}
+
+// ===================== AI CALLS =====================
+async function callClaude(prompt, systemPrompt) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: systemPrompt,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || 'Ошибка получения ответа';
+  } catch(e) {
+    return 'Ошибка соединения с AI. Проверь подключение.';
+  }
+}
+
+function formatAIOutput(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^### (.*)/gm,'<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin:12px 0 4px;font-weight:600">$1</div>')
+    .replace(/^## (.*)/gm,'<div style="font-size:14px;font-weight:600;color:var(--text);margin:14px 0 6px">$1</div>')
+    .replace(/^- (.*)/gm,'<div style="padding:2px 0 2px 12px;border-left:2px solid var(--border2)">$1</div>')
+    .replace(/\n/g,'<br>');
+}
+
+// ---- ANALYZER ----
+async function analyzeChannel() {
+  const name = document.getElementById('ch-name').value;
+  const subs = document.getElementById('ch-subs').value;
+  const reach = document.getElementById('ch-reach').value;
+  const price = document.getElementById('ch-price').value;
+  const err = document.getElementById('ch-err').value;
+  const topic = document.getElementById('ch-topic').value;
+  const product = document.getElementById('ch-product').value;
+  const platform = currentPlatform;
+  const rkn = platform==='max' ? document.getElementById('ch-rkn').value : 'na';
+
+  if(!subs||!reach||!price) { notify('Заполни хотя бы подписчиков, охват и цену','warn'); return; }
+
+  const reachPct = Math.round(reach/subs*100);
+  const errNum = err||Math.round(reach/subs*100*0.4);
+  const conv = platform==='max' ? 3.5 : 2.5;
+  const expSubs = Math.round(reach*conv/100);
+  const cpf = Math.round(price/expSubs);
+
+  const sysPrompt = `Ты опытный медиабайер рекламы в Telegram и MAX мессенджере. 
+Анализируешь каналы перед закупкой. Отвечай на русском, структурированно, конкретно.
+Используй эмодзи для визуальной структуры. Всегда давай чёткий вердикт.
+Для MAX: учитывай что это молодая платформа (2025), охваты выше ТГ естественно, цены ниже.
+Норма ERR: ТГ 10-20%, MAX 15-30%. Охват: ТГ 20-50%, MAX 25-60%.`;
+
+  const prompt = `Проанализируй канал для рекламной закупки:
+
+Платформа: ${platform==='tg'?'Telegram':'MAX мессенджер'}
+Канал: ${name||'не указан'}
+Подписчиков: ${subs}
+Охват поста: ${reach} (${reachPct}% от подписчиков)
+ERR: ${errNum}%
+Цена размещения: ${price} руб
+Тематика: ${topic||'не указана'}
+Продукт рекламодателя: ${product||'не указан'}
+${platform==='max'?`Регистрация в РКН: ${rkn==='yes'?'✅ есть':rkn==='no'?'❌ нет':'❓ не проверено'}`:''}
+
+Расчёт:
+- Ожидаемых подписчиков: ~${expSubs} (конверсия ${conv}%)
+- CPF: ~${cpf} руб
+
+Дай анализ по структуре:
+ВЕРДИКТ (✅ БРАТЬ / ⚠️ ОСТОРОЖНО / ❌ НЕ БРАТЬ)
+Что хорошо
+Что настораживает
+Экономика (оценка CPF для этой ниши)
+${platform==='max'?'Юридика (РКН, маркировка)':''}
+Итог (2-3 предложения)`;
+
+  document.getElementById('analyze-loading').style.display='flex';
+  document.getElementById('analyze-result').classList.remove('show');
+  const result = await callClaude(prompt, sysPrompt);
+  document.getElementById('analyze-loading').style.display='none';
+  const el = document.getElementById('analyze-result');
+  el.innerHTML = formatAIOutput(result);
+  el.classList.add('show');
+}
+
+// ---- POST GENERATOR ----
+async function generatePost() {
+  const product = document.getElementById('post-product').value;
+  const niche = document.getElementById('post-niche').value;
+  const pain = document.getElementById('post-pain').value;
+  const result = document.getElementById('post-result').value;
+  const tone = document.getElementById('post-tone').value;
+  const hunt = document.getElementById('post-hunt').value;
+  const cta = document.getElementById('post-cta').value;
+  const platform = postPlatform;
+
+  if(!product||!pain) { notify('Укажи продукт и боль аудитории','warn'); return; }
+
+  const sysPrompt = `Ты копирайтер по методологии Фрэнка Керна. Пишешь рекламные посты для Telegram и MAX каналов.
+Формула Керна: Точка зрения → История с эмоцией → Метафора → Мягкий CTA.
+Ключевые принципы:
+- Разговорный стиль, как письмо другу
+- Конкретные цифры вместо абстракций
+- Страх потери сильнее желания приобрести
+- Не продавать в лоб — создавать связь
+- Обращаться к истинным желаниям (свобода, признание, контроль)
+Для MAX: формат как ТГ, обязательна пометка "Реклама" в конце.`;
+
+  const tones = {frank_kern:'разговорный Фрэнк Керн — личный, с историей, с юмором',story:'через историю реального клиента',expert:'экспертный с фактами и цифрами',provocative:'провокационный, вызывающий'};
+  const hunts = {'0':'аудитория не осознаёт проблему — надо пробудить','1':'чувствует боль но не знает причину','2':'ищет решения, перебирает варианты','3':'выбирает метод, понял направление','4':'сравнивает продукты','5':'готов купить, нужен финальный толчок'};
+  const ctas = {link:'ссылка на канал/сайт',subscribe:'подписка на канал',bot:'переход в бот',comment:'призыв к комментарию/реакции'};
+
+  const prompt = `Напиши 3 варианта рекламного поста:
+
+Платформа: ${platform==='tg'?'Telegram':'MAX мессенджер'}
+Продукт: ${product}
+Ниша канала: ${niche||'широкая аудитория'}
+Главная боль: ${pain}
+Результат/оффер: ${result||'не указан'}
+Тон: ${tones[tone]}
+Уровень аудитории (лестница Ханта): ${hunt} — ${hunts[hunt]}
+CTA: ${ctas[cta]}
+
+Требования:
+- Каждый вариант должен отличаться подходом (угол, история, эмоция)
+- Длина: 600-900 символов
+- Структура по формуле Керна
+- Конкретные цифры, живые образы
+- Без банальных фраз ("уникальная возможность", "не упустите шанс")
+${platform==='max'?'- В конце каждого поста добавь: Реклама | erid: [ТОКЕН]':''}
+
+Формат вывода: ВАРИАНТ 1, ВАРИАНТ 2, ВАРИАНТ 3`;
+
+  document.getElementById('post-loading').style.display='flex';
+  document.getElementById('post-result').classList.remove('show');
+  const res = await callClaude(prompt, sysPrompt);
+  document.getElementById('post-loading').style.display='none';
+  const el = document.getElementById('post-result');
+  el.innerHTML = formatAIOutput(res);
+  el.classList.add('show');
+}
+
+// ---- HUNT ANALYZER ----
+async function analyzeHunt() {
+  const product = document.getElementById('hunt-product').value;
+  const audience = document.getElementById('hunt-audience').value;
+  const persona = document.getElementById('hunt-persona').value;
+  if(!product) { notify('Укажи продукт','warn'); return; }
+
+  const personas = {success:'Самодовольный успешный (высокий доход, не видит проблем)',burnout:'Выгорающий продюсер (много работы, мало результата)',skeptic:'Скептичный эксперт (опыт + предубеждения к новому)',newbie:'Амбициозный новичок (энтузиазм без опыта)',pragmatic:'Прагматичный владелец (растущие расходы, тающая прибыль)'};
+
+  const sysPrompt = `Ты маркетолог-стратег. Строишь логические цепочки принятия решений по методологии лестницы Ханта.
+Каждый этап включает: внутренний монолог персонажа (в кавычках, от первого лица), триггер (что вызывает сдвиг), инсайт, внутренний конфликт, результат.
+Принципы: конкретные цифры, эмоции важнее логики, страх потери сильнее желания приобрести.`;
+
+  const prompt = `Построй логическую цепочку от уровня 0 до уровня 5 по лестнице Ханта для:
+
+Продукт: ${product}
+Аудитория: ${audience||'широкая'}
+Тип персонажа: ${personas[persona]}
+
+Для каждого этапа (0→1→2→3→4→5):
+- Название этапа
+- Мысль персонажа (в кавычках, живо, реалистично)
+- Что его триггерит к следующему уровню
+- Внутренний конфликт и сомнения
+- К чему приходит
+
+В конце: список из 5 ключевых триггеров для рекламного контента.`;
+
+  document.getElementById('hunt-loading').style.display='flex';
+  document.getElementById('hunt-result').classList.remove('show');
+  const res = await callClaude(prompt, sysPrompt);
+  document.getElementById('hunt-loading').style.display='none';
+  const el = document.getElementById('hunt-result');
+  el.innerHTML = formatAIOutput(res);
+  el.classList.add('show');
+}
+
+// ---- AVATAR ----
+async function buildAvatar() {
+  const product = document.getElementById('av-product').value;
+  const age = document.getElementById('av-age').value;
+  const job = document.getElementById('av-job').value;
+  const pain = document.getElementById('av-pain').value;
+  const desire = document.getElementById('av-desire').value;
+  if(!product) { notify('Укажи продукт','warn'); return; }
+
+  const sysPrompt = `Ты создаёшь портреты аватаров клиентов по методологии Фрэнка Керна "Core Influence / Истинное влияние".
+Ключевая идея: у каждого человека есть ВНЕШНЯЯ личность (кем он себя считает) и ИСТИННАЯ (кем хочет быть).
+Формула О+Л=Ж. Люди стремятся не к вещам, а к ощущениям и опыту.
+Создавай конкретных, живых персонажей с деталями. Настолько точно, чтобы читатель сказал "это про меня".`;
+
+  const prompt = `Создай детальный портрет аватара клиента:
+
+Продукт/ниша: ${product}
+Возраст: ${age||'35-45 лет'}
+Профессия: ${job||'не указана'}
+Поверхностная боль: ${pain||'не указана'}
+Истинное стремление: ${desire||'свобода, признание, контроль'}
+
+Структура портрета:
+1. ВНЕШНЯЯ ЛИЧНОСТЬ — имя, возраст, работа, типичный день (подробно, по часам)
+2. ИСТИННАЯ ЛИЧНОСТЬ — 3-4 глубинных стремления (не вещи, а ощущения)
+3. ИДЕАЛЬНЫЙ ДЕНЬ — если бы не было ограничений
+4. ИЛЛЮЗИИ vs ИСТИННЫЕ ПОТРЕБНОСТИ — 3 пары
+5. КАК ОБРАЩАТЬСЯ — 3 заголовка/фразы которые бьют в подсознание
+
+Важно: конкретные детали, живые мысли в кавычках, реальные страхи.`;
+
+  document.getElementById('avatar-loading').style.display='flex';
+  document.getElementById('avatar-result').classList.remove('show');
+  const res = await callClaude(prompt, sysPrompt);
+  document.getElementById('avatar-loading').style.display='none';
+  const el = document.getElementById('avatar-result');
+  el.innerHTML = formatAIOutput(res);
+  el.classList.add('show');
+}
+
+// ---- NEGOTIATE ----
+async function generateNeg() {
+  const goal = document.getElementById('neg-goal').value;
+  const channel = document.getElementById('neg-channel').value;
+  const budget = document.getElementById('neg-budget').value;
+  const product = document.getElementById('neg-product').value;
+
+  const goals = {first:'первое обращение к незнакомому владельцу канала',price:'торг — хочу снизить цену',followup:'follow-up — не ответили на предыдущее сообщение',conditions:'уточнение условий размещения',reject:'вежливый отказ от размещения'};
+
+  const sysPrompt = `Ты опытный менеджер по закупке рекламы. Пишешь короткие, вежливые, конкретные сообщения для переписки с администраторами каналов.
+Принципы: уважительный тон, конкретика, без лести, короткие сообщения (3-5 предложений). Не использовать корпоративный язык.`;
+
+  const prompt = `Напиши сообщение администратору канала.
+
+Цель: ${goals[goal]}
+Канал: ${channel||'название канала'}
+Бюджет: ${budget?budget+' руб':'не указан'}
+Продукт для рекламы: ${product||'не указан'}
+
+Напиши 2 варианта — более формальный и более неформальный.
+Каждый 2-4 предложения. Без лишней воды.`;
+
+  document.getElementById('neg-loading').style.display='flex';
+  document.getElementById('neg-result').classList.remove('show');
+  const res = await callClaude(prompt, sysPrompt);
+  document.getElementById('neg-loading').style.display='none';
+  const el = document.getElementById('neg-result');
+  el.innerHTML = formatAIOutput(res);
+  el.classList.add('show');
+}
+
+// ---- REPORT ----
+async function generateReport() {
+  const sysPrompt = `Ты аналитик рекламных кампаний. Даёшь конкретные рекомендации по результатам размещений.`;
+  const prompt = `На основе данных кампании дай выводы и рекомендации:
+
+Данные апрель 2025:
+- Всего размещений: 24 (ТГ: 18, MAX: 6)
+- Потрачено: 84 200 руб (ТГ: 61к, MAX: 23к)
+- Подписчиков: 2840
+- Средний CPF: ТГ 32р, MAX 21р
+- Лучшие каналы: smm_secrets (CPF 28р, ERR 24%), Tech MAX (CPF 18р, ERR 35%)
+- Худший канал: bigblog_news (CPF 126р, ERR 6%)
+
+Дай: 
+1. Главные выводы (что работает)
+2. Что масштабировать
+3. От чего отказаться
+4. Где найти похожие успешные каналы
+5. Прогноз на май при бюджете 100к руб`;
+
+  document.getElementById('report-loading').style.display='flex';
+  const res = await callClaude(prompt, sysPrompt);
+  document.getElementById('report-loading').style.display='none';
+  document.getElementById('report-result').innerHTML = formatAIOutput(res);
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  const dealDate = document.getElementById('deal-date');
+  if(dealDate) dealDate.value = today;
+});
+</script>
+</body>
+</html>
